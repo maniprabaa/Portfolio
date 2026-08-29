@@ -2,6 +2,8 @@ import { useState } from 'react';
 import PageShell from '../components/layout/PageShell.jsx';
 import { StandalonePageLinks } from '../components/layout/PageHeader.jsx';
 import Reveal from '../components/ui/Reveal.jsx';
+import SocialLinks from '../components/ui/SocialLinks.jsx';
+import { GITHUB_URL, LINKEDIN_URL } from '../lib/site.js';
 import { api } from '../services/api.js';
 import { usePortfolio, PageLoader, PageError } from '../hooks/usePortfolio.jsx';
 
@@ -131,6 +133,28 @@ export default function ContactPage() {
                   {profile.email}
                 </a>
               )}
+              <div className="mt-8 space-y-3">
+                <p className="font-orbit text-[9px] tracking-[0.4em] text-fg-3">SOCIAL</p>
+                <SocialLinks />
+                <div className="flex flex-col gap-2 pt-2">
+                  <a
+                    href={GITHUB_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-display text-[12px] tracking-[0.2em] text-fg-2 transition hover:text-mint"
+                  >
+                    GITHUB →
+                  </a>
+                  <a
+                    href={LINKEDIN_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-display text-[12px] tracking-[0.2em] text-fg-2 transition hover:text-mint"
+                  >
+                    LINKEDIN →
+                  </a>
+                </div>
+              </div>
             </Reveal>
           </div>
 

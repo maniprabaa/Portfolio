@@ -9,7 +9,7 @@ export default function PageShell({ children, profile, hero = false }) {
       <main
         id="main-content"
         className={`relative z-10 pb-16 md:pb-24 ${
-          hero ? 'pt-[4.75rem] md:pt-20' : 'pt-28 md:pt-36'
+          hero ? 'pt-20' : 'pt-28 md:pt-36'
         }`}
       >
         {children}

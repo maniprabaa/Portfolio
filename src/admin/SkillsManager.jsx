@@ -1,9 +1,19 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { resolveAsset } from '../config/baseUrl.js';
 import { api } from '../services/api.js';
+import { SKILL_CATEGORIES } from '../lib/skills.js';
+import {
+  AdminButton,
+  AdminCard,
+  AdminEmpty,
+  AdminField,
+  AdminInput,
+  AdminListItem,
+  AdminPageHeader,
+  AdminSelect,
+} from './components/AdminUi.jsx';
 
-const empty = { name: '', image: '', order: 0 };
+const empty = { name: '', image: '', category: 'frontend', order: 0 };
 
 export default function SkillsManager() {
   const [skills, setSkills] = useState([]);
@@ -11,7 +21,10 @@ export default function SkillsManager() {
   const [editingId, setEditingId] = useState(null);
 
   const load = () => api.getSkills().then(setSkills).catch(console.error);
-  useEffect(() => { load(); }, []);
+
+  useEffect(() => {
+    load();
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -26,7 +39,12 @@ export default function SkillsManager() {
   };
 
   const handleEdit = (skill) => {
-    setForm({ name: skill.name, image: skill.image, order: skill.order });
+    setForm({
+      name: skill.name,
+      image: skill.image,
+      category: skill.category || 'frontend',
+      order: skill.order,
+    });
     setEditingId(skill._id);
   };
 
@@ -45,49 +63,105 @@ export default function SkillsManager() {
 
   return (
     <div>
-      <Link to="/admin" className="text-xs text-stone-500 hover:text-stone-800">← Back</Link>
-      <h2 className="mb-6 mt-2 text-xl font-medium text-stone-800">Skills</h2>
+      <AdminPageHeader
+        eyebrow="STACK"
+        title="Skills"
+        description="Manage skill icons, categories, and display order."
+      />
 
-      <form onSubmit={handleSubmit} className="mb-8 space-y-3 rounded-xl border border-stone-200 bg-white p-6">
-        <input
-          placeholder="Skill name"
-          value={form.name}
-          onChange={(e) => setForm({ ...form, name: e.target.value })}
-          required
-          className="w-full rounded-lg border border-stone-200 px-3 py-2 text-sm"
-        />
-        <input
-          placeholder="Image URL"
-          value={form.image}
-          onChange={(e) => setForm({ ...form, image: e.target.value })}
-          className="w-full rounded-lg border border-stone-200 px-3 py-2 text-sm"
-        />
-        <input type="file" accept="image/*" onChange={handleUpload} />
-        <input
-          type="number"
-          placeholder="Order"
-          value={form.order}
-          onChange={(e) => setForm({ ...form, order: Number(e.target.value) })}
-          className="w-full rounded-lg border border-stone-200 px-3 py-2 text-sm"
-        />
-        <button type="submit" className="rounded-lg bg-stone-800 px-4 py-2 text-sm text-white">
-          {editingId ? 'Update' : 'Add'} Skill
-        </button>
-      </form>
+      <AdminCard title={editingId ? 'Update Skill' : 'Add Skill'} className="mb-6">
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <AdminField label="Skill Name">
+              <AdminInput
+                placeholder="React"
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                required
+              />
+            </AdminField>
+            <AdminField label="Image URL">
+              <AdminInput
+                placeholder="/uploads/skills/react.svg"
+                value={form.image}
+                onChange={(e) => setForm({ ...form, image: e.target.value })}
+              />
+            </AdminField>
+            <AdminField label="Category">
+              <AdminSelect
+                value={form.category}
+                onChange={(e) => setForm({ ...form, category: e.target.value })}
+              >
+                {SKILL_CATEGORIES.map((cat) => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.label}
+                  </option>
+                ))}
+              </AdminSelect>
+            </AdminField>
+            <AdminField label="Order">
+              <AdminInput
+                type="number"
+                value={form.order}
+                onChange={(e) => setForm({ ...form, order: Number(e.target.value) })}
+              />
+            </AdminField>
+          </div>
+          <AdminField label="Upload Icon">
+            <AdminInput type="file" accept="image/*" onChange={handleUpload} />
+          </AdminField>
+          <div className="flex gap-2">
+            <AdminButton type="submit">{editingId ? 'Update Skill' : 'Add Skill'}</AdminButton>
+            {editingId && (
+              <AdminButton
+                variant="ghost"
+                onClick={() => {
+                  setForm(empty);
+                  setEditingId(null);
+                }}
+              >
+                Cancel
+              </AdminButton>
+            )}
+          </div>
+        </form>
+      </AdminCard>
 
       <div className="space-y-2">
-        {skills.map((skill) => (
-          <div key={skill._id} className="flex items-center justify-between rounded-lg border border-stone-200 bg-white px-4 py-3">
-            <div className="flex items-center gap-3">
-              {skill.image && <img src={resolveAsset(skill.image)} alt="" className="h-8 w-8 object-contain" />}
-              <span className="text-sm text-stone-700">{skill.name}</span>
-            </div>
-            <div className="flex gap-2">
-              <button type="button" onClick={() => handleEdit(skill)} className="text-xs text-stone-500 hover:text-stone-800">Edit</button>
-              <button type="button" onClick={() => handleDelete(skill._id)} className="text-xs text-red-500">Delete</button>
-            </div>
-          </div>
-        ))}
+        {skills.length === 0 ? (
+          <AdminEmpty message="No skills added yet." />
+        ) : (
+          skills.map((skill) => (
+            <AdminListItem
+              key={skill._id}
+              leading={
+                skill.image ? (
+                  <img
+                    src={resolveAsset(skill.image)}
+                    alt=""
+                    className="h-8 w-8 object-contain"
+                  />
+                ) : (
+                  <div className="flex h-8 w-8 items-center justify-center rounded border border-line text-[10px] text-fg-3">
+                    {skill.name.slice(0, 2).toUpperCase()}
+                  </div>
+                )
+              }
+              title={skill.name}
+              subtitle={`${skill.category || 'frontend'} · order ${skill.order ?? 0}`}
+              actions={
+                <>
+                  <AdminButton variant="ghost" onClick={() => handleEdit(skill)}>
+                    Edit
+                  </AdminButton>
+                  <AdminButton variant="danger" onClick={() => handleDelete(skill._id)}>
+                    Delete
+                  </AdminButton>
+                </>
+              }
+            />
+          ))
+        )}
       </div>
     </div>
   );

@@ -1,6 +1,14 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { api } from '../services/api.js';
+import {
+  AdminAlert,
+  AdminButton,
+  AdminCard,
+  AdminField,
+  AdminInput,
+  AdminPageHeader,
+  AdminTextarea,
+} from './components/AdminUi.jsx';
 
 const fields = [
   { key: 'siteTitle', label: 'Site Title' },
@@ -56,57 +64,57 @@ export default function ProfileEditor() {
     }
   };
 
-  if (!profile) return <p className="text-stone-500">Loading...</p>;
+  if (!profile) {
+    return <p className="text-sm text-fg-3">Loading profile...</p>;
+  }
 
   return (
     <div>
-      <Link to="/admin" className="text-xs text-stone-500 hover:text-stone-800">
-        ← Back
-      </Link>
-      <h2 className="mb-6 mt-2 text-xl font-medium text-stone-800">Edit Profile</h2>
-      <form onSubmit={handleSave} className="space-y-4 rounded-xl border border-stone-200 bg-white p-6">
-        {fields.map(({ key, label, textarea }) => (
-          <div key={key}>
-            <label className="mb-1 block text-xs text-stone-500">{label}</label>
-            {textarea ? (
-              <textarea
-                value={profile[key] || ''}
-                onChange={(e) => setProfile({ ...profile, [key]: e.target.value })}
-                rows={3}
-                className="w-full rounded-lg border border-stone-200 px-3 py-2 text-sm outline-none focus:border-stone-400"
-              />
-            ) : (
-              <input
-                value={profile[key] || ''}
-                onChange={(e) => setProfile({ ...profile, [key]: e.target.value })}
-                className="w-full rounded-lg border border-stone-200 px-3 py-2 text-sm outline-none focus:border-stone-400"
-              />
-            )}
+      <AdminPageHeader
+        eyebrow="CONTENT"
+        title="Edit Profile"
+        description="Update your hero section, about details, profile photo, and resume."
+      />
+
+      <AdminCard>
+        <form onSubmit={handleSave} className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            {fields.map(({ key, label, textarea }) => (
+              <AdminField key={key} label={label}>
+                {textarea ? (
+                  <AdminTextarea
+                    value={profile[key] || ''}
+                    onChange={(e) => setProfile({ ...profile, [key]: e.target.value })}
+                    rows={3}
+                  />
+                ) : (
+                  <AdminInput
+                    value={profile[key] || ''}
+                    onChange={(e) => setProfile({ ...profile, [key]: e.target.value })}
+                  />
+                )}
+              </AdminField>
+            ))}
           </div>
-        ))}
-        <div className="flex gap-4">
-          <div>
-            <label className="mb-1 block text-xs text-stone-500">Upload Profile Image</label>
-            <input type="file" accept="image/*" onChange={(e) => handleUpload(e, 'profileImage')} />
+
+          <div className="grid gap-4 border-t border-line pt-4 md:grid-cols-2">
+            <AdminField label="Upload Profile Image">
+              <AdminInput type="file" accept="image/*" onChange={(e) => handleUpload(e, 'profileImage')} />
+            </AdminField>
+            <AdminField label="Upload Resume">
+              <AdminInput type="file" accept=".pdf" onChange={(e) => handleUpload(e, 'resumeUrl')} />
+            </AdminField>
           </div>
-          <div>
-            <label className="mb-1 block text-xs text-stone-500">Upload Resume</label>
-            <input type="file" accept=".pdf" onChange={(e) => handleUpload(e, 'resumeUrl')} />
-          </div>
-        </div>
-        {status && (
-          <p className={`text-sm ${status.includes('success') ? 'text-green-600' : 'text-red-500'}`}>
-            {status}
-          </p>
-        )}
-        <button
-          type="submit"
-          disabled={saving}
-          className="rounded-lg bg-stone-800 px-6 py-2 text-sm text-white hover:bg-stone-700 disabled:opacity-50"
-        >
-          {saving ? 'Saving...' : 'Save Profile'}
-        </button>
-      </form>
+
+          {status && (
+            <AdminAlert type={status.includes('success') ? 'success' : 'error'}>{status}</AdminAlert>
+          )}
+
+          <AdminButton type="submit" disabled={saving}>
+            {saving ? 'Saving...' : 'Save Profile'}
+          </AdminButton>
+        </form>
+      </AdminCard>
     </div>
   );
 }

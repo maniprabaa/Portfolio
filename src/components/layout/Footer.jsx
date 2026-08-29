@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
-import Logo from '../ui/Logo.jsx';
 import TechVoidBrand from '../ui/TechVoidBrand.jsx';
-import { NAV_LINKS, TECH_VOID_URL } from '../../lib/site.js';
+import SocialLinks from '../ui/SocialLinks.jsx';
+import { GITHUB_URL, LINKEDIN_URL, NAV_LINKS, TECH_VOID_URL } from '../../lib/site.js';
 
 export default function Footer({ profile }) {
   const name = profile?.name || 'Portfolio';
@@ -12,10 +12,12 @@ export default function Footer({ profile }) {
       <div className="mx-auto max-w-page px-6 py-16 md:px-10 md:py-20">
         <div className="grid gap-12 sm:grid-cols-2 lg:grid-cols-4">
           <div>
-            <Logo profile={profile} />
-            <p className="mt-4 font-orbit text-lg font-bold tracking-[0.35em]">
+            <Link
+              to="/"
+              className="font-orbit text-lg font-bold tracking-[0.35em] text-fg transition-colors hover:text-mint"
+            >
               {name.toUpperCase()}
-            </p>
+            </Link>
             <p className="mt-4 max-w-60 text-xs leading-relaxed text-fg-3">
               {profile?.tagline || 'Full-Stack Developer crafting digital experiences.'}
             </p>
@@ -27,6 +29,7 @@ export default function Footer({ profile }) {
                 {email}
               </a>
             )}
+            <SocialLinks className="mt-5" />
           </div>
 
           <nav className="flex flex-col gap-3" aria-label="Pages">
@@ -61,11 +64,29 @@ export default function Footer({ profile }) {
           </div>
 
           <div>
-            <p className="font-orbit text-[9px] tracking-[0.4em] text-fg-3">STATUS</p>
+            <p className="font-orbit text-[9px] tracking-[0.4em] text-fg-3">CONNECT</p>
             <p className="mt-4 font-display text-[12px] tracking-[0.2em] text-mint">
               {profile?.freelance?.toUpperCase() || 'AVAILABLE'}
             </p>
             <p className="mt-2 text-sm text-fg-2">{profile?.experience}</p>
+            <div className="mt-6 space-y-2">
+              <a
+                href={GITHUB_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block font-display text-[12px] tracking-[0.15em] text-fg-2 transition-colors hover:text-mint"
+              >
+                GITHUB →
+              </a>
+              <a
+                href={LINKEDIN_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block font-display text-[12px] tracking-[0.15em] text-fg-2 transition-colors hover:text-mint"
+              >
+                LINKEDIN →
+              </a>
+            </div>
           </div>
         </div>
 

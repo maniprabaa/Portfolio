@@ -2,7 +2,7 @@ import bcrypt from 'bcryptjs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
-import { connectDB, getDb, saveDb, createId, sortByOrder, createItem } from './store/index.js';
+import { connectDB, getDb, saveDb, createId, markDbInitialized, isDbInitialized } from './store/index.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const uploadsDir = path.join(__dirname, '../public/uploads');
@@ -16,14 +16,26 @@ const defaultWorlds = [
 ];
 
 const defaultSkills = [
-  { name: 'HTML', image: '/uploads/html.png', order: 0 },
-  { name: 'CSS', image: '/uploads/css.png', order: 1 },
-  { name: 'BOOTSTRAP', image: '/uploads/bootstrap.png', order: 2 },
-  { name: 'JAVASCRIPT', image: '/uploads/js.png', order: 3 },
-  { name: 'REACT JS', image: '/uploads/react.png', order: 4 },
-  { name: 'DOCKER', image: '/uploads/docker.png', order: 5 },
-  { name: 'NODE JS', image: '/uploads/node.png', order: 6 },
-  { name: 'MONGODB', image: '/uploads/mongodb.png', order: 7 },
+  { name: 'HTML', image: '/uploads/html.png', category: 'frontend', order: 0 },
+  { name: 'CSS', image: '/uploads/css.png', category: 'frontend', order: 1 },
+  { name: 'JavaScript', image: '/uploads/js.png', category: 'frontend', order: 2 },
+  { name: 'TypeScript', image: '/uploads/skills/typescript.svg', category: 'frontend', order: 3 },
+  { name: 'React', image: '/uploads/react.png', category: 'frontend', order: 4 },
+  { name: 'Angular', image: '/uploads/skills/angular.svg', category: 'frontend', order: 5 },
+  { name: 'Vue.js', image: '/uploads/skills/vue.svg', category: 'frontend', order: 6 },
+  { name: 'Tailwind CSS', image: '/uploads/skills/tailwind.svg', category: 'frontend', order: 7 },
+  { name: 'Bootstrap', image: '/uploads/skills/bootstrap.svg', category: 'frontend', order: 8 },
+  { name: 'Node.js', image: '/uploads/node.png', category: 'backend', order: 10 },
+  { name: 'Express.js', image: '/uploads/skills/express.svg', category: 'backend', order: 11 },
+  { name: 'Socket.io', image: '/uploads/skills/socketio.svg', category: 'backend', order: 12 },
+  { name: 'Cloudflare', image: '/uploads/skills/cloudflare.svg', category: 'backend', order: 13 },
+  { name: 'REST API', image: '/uploads/skills/rest-api.svg', category: 'integration', order: 20 },
+  { name: 'JWT Auth', image: '/uploads/skills/jwt.svg', category: 'integration', order: 21 },
+  { name: 'API Integration', image: '/uploads/skills/api-integration.svg', category: 'integration', order: 22 },
+  { name: 'Razorpay', image: '/uploads/skills/razorpay.svg', category: 'payments', order: 30 },
+  { name: 'PhonePe', image: '/uploads/skills/phonepe.svg', category: 'payments', order: 31 },
+  { name: 'RevenueCat', image: '/uploads/skills/revenuecat.svg', category: 'payments', order: 32 },
+  { name: 'MongoDB', image: '/uploads/mongodb.png', category: 'database', order: 40 },
 ];
 
 const defaultProjects = [
@@ -33,6 +45,23 @@ const defaultProjects = [
   { title: 'Business Website', languages: 'HTML, CSS, JavaScript, Bootstrap, React', description: 'Full business website with modern UI.', image: '/uploads/hackthelogic.png', order: 3 },
   { title: 'Add To Cart', languages: 'HTML, CSS, JavaScript, Bootstrap, React', description: 'E-commerce cart functionality.', image: '/uploads/addtocart.png', order: 4 },
   { title: 'Watch Design', languages: 'HTML, CSS, JavaScript, React', description: 'Interactive watch product showcase.', image: '/uploads/watch.png', order: 5 },
+  {
+    title: 'CyberIntel',
+    languages: 'React, Node.js, Express, Cloudflare Workers',
+    description: 'Cybersecurity current affairs platform for staying updated on cyber news, threats, and industry events.',
+    image: '/uploads/cyberintel.png',
+    liveUrl: 'https://techvoidcyber.praba104016.workers.dev/',
+    order: 6,
+    content:
+      'CyberIntel is a cybersecurity intelligence platform built to help professionals stay ahead of threats, vulnerabilities, and breaking security news in one clean dashboard.\n\nThe feed aggregates advisories from sources like CISA, CVE databases, and security research outlets. Each article shows severity badges, source metadata, category tags, and quick actions for reading and saving important updates.\n\nUsers can browse by Latest, Breaking, Vulnerabilities, Threats, Breaches, Malware, CVE, and Research. A searchable library and sidebar navigation make it easy to follow the topics that matter most.',
+    highlights: [
+      'Real-time cybersecurity news feed with severity labels',
+      'Category tabs for CVE, threats, malware, breaches, and research',
+      'Searchable library with source and date metadata',
+      'Responsive dashboard UI with sidebar navigation',
+      'Deployed on Cloudflare Workers for fast global delivery',
+    ],
+  },
 ];
 
 function copyAssets() {
@@ -78,7 +107,8 @@ export async function seedDatabase() {
       age: '22',
       email: 'Praba104016@gmail.com',
       freelance: 'Available',
-      codingLanguages: 'HTML, CSS, Bootstrap, JavaScript, React.js, Node.js, Express.js, MongoDB',
+      codingLanguages:
+        'Frontend: HTML, CSS, JavaScript, TypeScript, React, Angular, Vue.js, Tailwind CSS, Bootstrap. Backend: Node.js, Express.js, Socket.io, Cloudflare. Integration: REST API, JWT Auth, API Integration. Payments: Razorpay, PhonePe, RevenueCat. Database: MongoDB.',
       skillTitle: 'Full-Stack Developer',
       experience: '2 Years',
       languages: 'Tamil, English',
@@ -92,19 +122,65 @@ export async function seedDatabase() {
     changed = true;
   }
 
-  if (db.skills.length === 0) {
-    db.skills = defaultSkills.map((s) => ({ ...s, _id: createId(), createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }));
+  if (!isDbInitialized()) {
+    if (db.skills.length === 0) {
+      db.skills = defaultSkills.map((s) => ({
+        ...s,
+        _id: createId(),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      }));
+      changed = true;
+    }
+
+    if (db.projects.length === 0) {
+      db.projects = defaultProjects.map((p) => ({
+        ...p,
+        _id: createId(),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      }));
+      changed = true;
+    }
+
+    if (db.worlds.length === 0) {
+      db.worlds = defaultWorlds.map((w) => ({
+        ...w,
+        _id: createId(),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      }));
+      changed = true;
+    }
+
+    markDbInitialized(db);
     changed = true;
   }
 
-  if (db.projects.length === 0) {
-    db.projects = defaultProjects.map((p) => ({ ...p, _id: createId(), createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }));
-    changed = true;
-  }
+  const requiredProjects = defaultProjects.filter((project) => project.title === 'CyberIntel');
+  for (const template of requiredProjects) {
+    const existing = db.projects.find((project) => project.title === template.title);
+    if (!existing) {
+      db.projects.push({
+        ...template,
+        _id: createId(),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      });
+      changed = true;
+      continue;
+    }
 
-  if (db.worlds.length === 0) {
-    db.worlds = defaultWorlds.map((w) => ({ ...w, _id: createId(), createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }));
-    changed = true;
+    if (existing.image !== template.image || !existing.content) {
+      existing.image = template.image;
+      existing.content = template.content;
+      existing.highlights = template.highlights;
+      existing.liveUrl = template.liveUrl;
+      existing.description = template.description;
+      existing.languages = template.languages;
+      existing.updatedAt = new Date().toISOString();
+      changed = true;
+    }
   }
 
   if (changed) {

@@ -8,6 +8,7 @@ const DATA_DIR = path.join(__dirname, '../../data');
 const DB_PATH = path.join(DATA_DIR, 'db.json');
 
 const defaultDb = {
+  meta: { initialized: false },
   admin: null,
   profile: null,
   skills: [],
@@ -27,7 +28,9 @@ function ensureDb() {
 
 function readDb() {
   ensureDb();
-  return JSON.parse(fs.readFileSync(DB_PATH, 'utf-8'));
+  const db = JSON.parse(fs.readFileSync(DB_PATH, 'utf-8'));
+  if (!db.meta) db.meta = { initialized: false };
+  return db;
 }
 
 function writeDb(data) {
@@ -48,6 +51,14 @@ export function saveDb(data) {
   writeDb(data);
 }
 
+/** Atomic read → mutate → write so concurrent requests cannot restore deleted rows. */
+export function mutateDb(mutator) {
+  const db = readDb();
+  const result = mutator(db);
+  writeDb(db);
+  return result;
+}
+
 export function createId() {
   return randomUUID();
 }
@@ -63,7 +74,11 @@ export function findById(collection, id) {
 export function updateById(collection, id, updates) {
   const index = collection.findIndex((item) => item._id === id);
   if (index === -1) return null;
-  collection[index] = { ...collection[index], ...updates, updatedAt: new Date().toISOString() };
+  collection[index] = {
+    ...collection[index],
+    ...updates,
+    updatedAt: new Date().toISOString(),
+  };
   return collection[index];
 }
 
@@ -83,4 +98,13 @@ export function createItem(collection, data) {
   };
   collection.push(item);
   return item;
+}
+
+export function isDbInitialized() {
+  const db = readDb();
+  return Boolean(db.meta?.initialized);
+}
+
+export function markDbInitialized(db) {
+  db.meta = { ...db.meta, initialized: true, updatedAt: new Date().toISOString() };
 }

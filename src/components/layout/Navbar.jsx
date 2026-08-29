@@ -74,12 +74,6 @@ export default function Navbar({ profile }) {
             >
               HIRE ME →
             </Link>
-            <Link
-              to="/admin"
-              className="border border-line px-3 py-1.5 font-orbit text-[9px] tracking-[0.3em] text-fg-2 transition-colors hover:border-mint/40 hover:text-mint"
-            >
-              ADMIN
-            </Link>
           </nav>
 
           <button

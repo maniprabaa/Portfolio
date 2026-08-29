@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+
+Disallow: /#/techvoid/admin
+Disallow: /techvoid/admin
+
+Sitemap: /sitemap.xml

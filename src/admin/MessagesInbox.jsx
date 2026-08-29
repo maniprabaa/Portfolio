@@ -1,60 +1,91 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useOutletContext } from 'react-router-dom';
 import { api } from '../services/api.js';
+import {
+  AdminButton,
+  AdminEmpty,
+  AdminPageHeader,
+} from './components/AdminUi.jsx';
 
 export default function MessagesInbox() {
   const [messages, setMessages] = useState([]);
+  const outletContext = useOutletContext() || {};
 
   const load = () => api.getMessages().then(setMessages).catch(console.error);
-  useEffect(() => { load(); }, []);
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  const refreshUnread = async () => {
+    await load();
+    if (outletContext.refreshUnread) {
+      await outletContext.refreshUnread();
+    }
+  };
 
   const markRead = async (id) => {
     await api.markMessageRead(id);
-    load();
+    await refreshUnread();
   };
 
   const handleDelete = async (id) => {
     if (!confirm('Delete this message?')) return;
     await api.deleteMessage(id);
-    load();
+    await refreshUnread();
   };
 
   return (
     <div>
-      <Link to="/admin" className="text-xs text-stone-500 hover:text-stone-800">← Back</Link>
-      <h2 className="mb-6 mt-2 text-xl font-medium text-stone-800">Contact Messages</h2>
+      <AdminPageHeader
+        eyebrow="INBOX"
+        title="Contact Messages"
+        description="Read and manage messages sent from your contact form."
+      />
 
       <div className="space-y-3">
-        {messages.length === 0 && (
-          <p className="text-sm text-stone-400">No messages yet.</p>
+        {messages.length === 0 ? (
+          <AdminEmpty message="No messages yet." />
+        ) : (
+          messages.map((msg) => (
+            <article
+              key={msg._id}
+              className={`rounded-xl border p-5 transition ${
+                msg.read
+                  ? 'border-line bg-void-2/50'
+                  : 'border-mint/30 bg-mint/5'
+              }`}
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="font-medium text-fg">{msg.name}</p>
+                    {!msg.read && (
+                      <span className="rounded-full border border-mint/30 bg-mint/10 px-2 py-0.5 text-[10px] tracking-wider text-mint">
+                        NEW
+                      </span>
+                    )}
+                  </div>
+                  <p className="mt-1 text-xs text-fg-3">{msg.email}</p>
+                  <p className="mt-3 text-sm leading-relaxed text-fg-2">{msg.message}</p>
+                  <p className="mt-3 text-[10px] tracking-wider text-fg-3">
+                    {new Date(msg.createdAt).toLocaleString()}
+                  </p>
+                </div>
+                <div className="flex shrink-0 gap-2">
+                  {!msg.read && (
+                    <AdminButton variant="ghost" onClick={() => markRead(msg._id)}>
+                      Mark read
+                    </AdminButton>
+                  )}
+                  <AdminButton variant="danger" onClick={() => handleDelete(msg._id)}>
+                    Delete
+                  </AdminButton>
+                </div>
+              </div>
+            </article>
+          ))
         )}
-        {messages.map((msg) => (
-          <div
-            key={msg._id}
-            className={`rounded-lg border p-4 ${msg.read ? 'border-stone-200 bg-white' : 'border-stone-400 bg-stone-50'}`}
-          >
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="font-medium text-stone-800">{msg.name}</p>
-                <p className="text-xs text-stone-400">{msg.email}</p>
-                <p className="mt-2 text-sm text-stone-600">{msg.message}</p>
-                <p className="mt-1 text-[10px] text-stone-300">
-                  {new Date(msg.createdAt).toLocaleString()}
-                </p>
-              </div>
-              <div className="flex gap-2">
-                {!msg.read && (
-                  <button type="button" onClick={() => markRead(msg._id)} className="text-xs text-stone-500">
-                    Mark read
-                  </button>
-                )}
-                <button type="button" onClick={() => handleDelete(msg._id)} className="text-xs text-red-500">
-                  Delete
-                </button>
-              </div>
-            </div>
-          </div>
-        ))}
       </div>
     </div>
   );

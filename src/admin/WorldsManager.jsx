@@ -1,6 +1,16 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { api } from '../services/api.js';
+import {
+  AdminButton,
+  AdminCard,
+  AdminEmpty,
+  AdminField,
+  AdminInput,
+  AdminListItem,
+  AdminPageHeader,
+  AdminSelect,
+  AdminTextarea,
+} from './components/AdminUi.jsx';
 
 const sectionTypes = ['intro', 'about', 'skills', 'projects', 'contact'];
 const empty = { act: '', title: '', description: '', hint: '', sectionType: 'intro', order: 0 };
@@ -11,7 +21,10 @@ export default function WorldsManager() {
   const [editingId, setEditingId] = useState(null);
 
   const load = () => api.getWorlds().then(setWorlds).catch(console.error);
-  useEffect(() => { load(); }, []);
+
+  useEffect(() => {
+    load();
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -45,38 +58,103 @@ export default function WorldsManager() {
 
   return (
     <div>
-      <Link to="/admin" className="text-xs text-stone-500 hover:text-stone-800">← Back</Link>
-      <h2 className="mb-6 mt-2 text-xl font-medium text-stone-800">Walking Worlds</h2>
+      <AdminPageHeader
+        eyebrow="SECTIONS"
+        title="Walking Worlds"
+        description="Manage walking portfolio sections, acts, and hints."
+      />
 
-      <form onSubmit={handleSubmit} className="mb-8 space-y-3 rounded-xl border border-stone-200 bg-white p-6">
-        <input placeholder="Act (e.g. ACT I)" value={form.act} onChange={(e) => setForm({ ...form, act: e.target.value })} required className="w-full rounded-lg border border-stone-200 px-3 py-2 text-sm" />
-        <input placeholder="Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required className="w-full rounded-lg border border-stone-200 px-3 py-2 text-sm" />
-        <textarea placeholder="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={2} className="w-full rounded-lg border border-stone-200 px-3 py-2 text-sm" />
-        <input placeholder="Hint text" value={form.hint} onChange={(e) => setForm({ ...form, hint: e.target.value })} className="w-full rounded-lg border border-stone-200 px-3 py-2 text-sm" />
-        <select value={form.sectionType} onChange={(e) => setForm({ ...form, sectionType: e.target.value })} className="w-full rounded-lg border border-stone-200 px-3 py-2 text-sm">
-          {sectionTypes.map((t) => (
-            <option key={t} value={t}>{t}</option>
-          ))}
-        </select>
-        <input type="number" placeholder="Order" value={form.order} onChange={(e) => setForm({ ...form, order: Number(e.target.value) })} className="w-full rounded-lg border border-stone-200 px-3 py-2 text-sm" />
-        <button type="submit" className="rounded-lg bg-stone-800 px-4 py-2 text-sm text-white">
-          {editingId ? 'Update' : 'Add'} World
-        </button>
-      </form>
+      <AdminCard title={editingId ? 'Update World' : 'Add World'} className="mb-6">
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <AdminField label="Act">
+              <AdminInput
+                placeholder="ACT I"
+                value={form.act}
+                onChange={(e) => setForm({ ...form, act: e.target.value })}
+                required
+              />
+            </AdminField>
+            <AdminField label="Title">
+              <AdminInput
+                placeholder="ORIGIN"
+                value={form.title}
+                onChange={(e) => setForm({ ...form, title: e.target.value })}
+                required
+              />
+            </AdminField>
+            <AdminField label="Section Type">
+              <AdminSelect
+                value={form.sectionType}
+                onChange={(e) => setForm({ ...form, sectionType: e.target.value })}
+              >
+                {sectionTypes.map((type) => (
+                  <option key={type} value={type}>
+                    {type}
+                  </option>
+                ))}
+              </AdminSelect>
+            </AdminField>
+            <AdminField label="Order">
+              <AdminInput
+                type="number"
+                value={form.order}
+                onChange={(e) => setForm({ ...form, order: Number(e.target.value) })}
+              />
+            </AdminField>
+          </div>
+          <AdminField label="Description">
+            <AdminTextarea
+              value={form.description}
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
+              rows={2}
+            />
+          </AdminField>
+          <AdminField label="Hint">
+            <AdminInput
+              value={form.hint}
+              onChange={(e) => setForm({ ...form, hint: e.target.value })}
+            />
+          </AdminField>
+          <div className="flex gap-2">
+            <AdminButton type="submit">{editingId ? 'Update World' : 'Add World'}</AdminButton>
+            {editingId && (
+              <AdminButton
+                variant="ghost"
+                onClick={() => {
+                  setForm(empty);
+                  setEditingId(null);
+                }}
+              >
+                Cancel
+              </AdminButton>
+            )}
+          </div>
+        </form>
+      </AdminCard>
 
       <div className="space-y-2">
-        {worlds.map((world) => (
-          <div key={world._id} className="flex items-center justify-between rounded-lg border border-stone-200 bg-white px-4 py-3">
-            <div>
-              <p className="text-sm font-medium text-stone-800">{world.act} / {world.title}</p>
-              <p className="text-xs text-stone-400">{world.sectionType} · {world.description}</p>
-            </div>
-            <div className="flex gap-2">
-              <button type="button" onClick={() => handleEdit(world)} className="text-xs text-stone-500">Edit</button>
-              <button type="button" onClick={() => handleDelete(world._id)} className="text-xs text-red-500">Delete</button>
-            </div>
-          </div>
-        ))}
+        {worlds.length === 0 ? (
+          <AdminEmpty message="No worlds configured yet." />
+        ) : (
+          worlds.map((world) => (
+            <AdminListItem
+              key={world._id}
+              title={`${world.act} / ${world.title}`}
+              subtitle={`${world.sectionType} · ${world.description}`}
+              actions={
+                <>
+                  <AdminButton variant="ghost" onClick={() => handleEdit(world)}>
+                    Edit
+                  </AdminButton>
+                  <AdminButton variant="danger" onClick={() => handleDelete(world._id)}>
+                    Delete
+                  </AdminButton>
+                </>
+              }
+            />
+          ))
+        )}
       </div>
     </div>
   );

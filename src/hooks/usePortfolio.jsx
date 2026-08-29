@@ -1,32 +1,42 @@
 import { useEffect, useState } from 'react';
 import { api } from '../services/api.js';
+import {
+  clearPortfolioCache,
+  getPortfolioCache,
+  getPortfolioLoadPromise,
+  setPortfolioCache,
+  setPortfolioLoadPromise,
+} from '../lib/portfolioCache.js';
 
-let cache = null;
-let loadPromise = null;
+export { clearPortfolioCache } from '../lib/portfolioCache.js';
 
 export function usePortfolio() {
-  const [data, setData] = useState(cache);
-  const [loading, setLoading] = useState(!cache);
+  const cached = getPortfolioCache();
+  const [data, setData] = useState(cached);
+  const [loading, setLoading] = useState(!cached);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (cache) {
-      setData(cache);
+    const currentCache = getPortfolioCache();
+    if (currentCache) {
+      setData(currentCache);
       setLoading(false);
       return;
     }
 
+    let loadPromise = getPortfolioLoadPromise();
     if (!loadPromise) {
       loadPromise = api
         .getPortfolio()
         .then((result) => {
-          cache = result;
+          setPortfolioCache(result);
           return result;
         })
         .catch((err) => {
-          loadPromise = null;
+          setPortfolioLoadPromise(null);
           throw err;
         });
+      setPortfolioLoadPromise(loadPromise);
     }
 
     loadPromise

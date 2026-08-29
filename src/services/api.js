@@ -1,4 +1,5 @@
 import { baseUrl } from '../config/baseUrl.js';
+import { clearPortfolioCache } from '../lib/portfolioCache.js';
 
 function getToken() {
   return localStorage.getItem('adminToken');
@@ -44,9 +45,21 @@ export const api = {
   updateSkill: (id, body) => request(`/skills/${id}`, { method: 'PUT', body }),
   deleteSkill: (id) => request(`/skills/${id}`, { method: 'DELETE' }),
   getProjects: () => request('/projects'),
-  createProject: (body) => request('/projects', { method: 'POST', body }),
-  updateProject: (id, body) => request(`/projects/${id}`, { method: 'PUT', body }),
-  deleteProject: (id) => request(`/projects/${id}`, { method: 'DELETE' }),
+  createProject: async (body) => {
+    const result = await request('/projects', { method: 'POST', body });
+    clearPortfolioCache();
+    return result;
+  },
+  updateProject: async (id, body) => {
+    const result = await request(`/projects/${id}`, { method: 'PUT', body });
+    clearPortfolioCache();
+    return result;
+  },
+  deleteProject: async (id) => {
+    const result = await request(`/projects/${id}`, { method: 'DELETE' });
+    clearPortfolioCache();
+    return result;
+  },
   getWorlds: () => request('/worlds'),
   createWorld: (body) => request('/worlds', { method: 'POST', body }),
   updateWorld: (id, body) => request(`/worlds/${id}`, { method: 'PUT', body }),

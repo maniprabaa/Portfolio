@@ -1,28 +1,89 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { resolveAsset } from '../config/baseUrl.js';
 import { api } from '../services/api.js';
+import {
+  blocksToLegacyContent,
+  normalizeContentBlocks,
+  sanitizeContentBlocks,
+} from '../lib/projectContent.js';
+import ProjectContentEditor from './components/ProjectContentEditor.jsx';
+import {
+  AdminAlert,
+  AdminButton,
+  AdminCard,
+  AdminEmpty,
+  AdminField,
+  AdminInput,
+  AdminListItem,
+  AdminPageHeader,
+  AdminTextarea,
+} from './components/AdminUi.jsx';
 
-const empty = { title: '', languages: '', description: '', image: '', order: 0 };
+const empty = {
+  title: '',
+  languages: '',
+  description: '',
+  contentBlocks: [{ type: 'text', value: '' }],
+  highlights: '',
+  image: '',
+  liveUrl: '',
+  order: 0,
+};
 
 export default function ProjectsManager() {
   const [projects, setProjects] = useState([]);
   const [form, setForm] = useState(empty);
   const [editingId, setEditingId] = useState(null);
+  const [error, setError] = useState('');
 
-  const load = () => api.getProjects().then(setProjects).catch(console.error);
-  useEffect(() => { load(); }, []);
+  const load = async () => {
+    try {
+      setError('');
+      const list = await api.getProjects();
+      setProjects(list);
+    } catch (err) {
+      setError(err.message || 'Failed to load projects');
+    }
+  };
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  const resetForm = () => {
+    setForm(empty);
+    setEditingId(null);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (editingId) {
-      await api.updateProject(editingId, form);
-    } else {
-      await api.createProject(form);
+    try {
+      setError('');
+      const contentBlocks = sanitizeContentBlocks(form.contentBlocks);
+      const payload = {
+        title: form.title,
+        languages: form.languages,
+        description: form.description,
+        image: form.image,
+        liveUrl: form.liveUrl,
+        order: form.order,
+        contentBlocks,
+        content: blocksToLegacyContent(contentBlocks),
+        highlights: form.highlights
+          .split('\n')
+          .map((item) => item.trim())
+          .filter(Boolean),
+      };
+      if (editingId) {
+        await api.updateProject(editingId, payload);
+      } else {
+        await api.createProject(payload);
+      }
+      resetForm();
+      await load();
+    } catch (err) {
+      setError(err.message || 'Failed to save project');
     }
-    setForm(empty);
-    setEditingId(null);
-    load();
   };
 
   const handleEdit = (project) => {
@@ -30,7 +91,10 @@ export default function ProjectsManager() {
       title: project.title,
       languages: project.languages,
       description: project.description,
+      contentBlocks: normalizeContentBlocks(project),
+      highlights: Array.isArray(project.highlights) ? project.highlights.join('\n') : '',
       image: project.image,
+      liveUrl: project.liveUrl || '',
       order: project.order,
     });
     setEditingId(project._id);
@@ -38,8 +102,14 @@ export default function ProjectsManager() {
 
   const handleDelete = async (id) => {
     if (!confirm('Delete this project?')) return;
-    await api.deleteProject(id);
-    load();
+    try {
+      setError('');
+      await api.deleteProject(id);
+      setProjects((prev) => prev.filter((project) => project._id !== id));
+      await load();
+    } catch (err) {
+      setError(err.message || 'Failed to delete project. Please log in again if your session expired.');
+    }
   };
 
   const handleUpload = async (e) => {
@@ -51,37 +121,129 @@ export default function ProjectsManager() {
 
   return (
     <div>
-      <Link to="/admin" className="text-xs text-stone-500 hover:text-stone-800">← Back</Link>
-      <h2 className="mb-6 mt-2 text-xl font-medium text-stone-800">Projects</h2>
+      <AdminPageHeader
+        eyebrow="WORK"
+        title="Projects"
+        description="Add portfolio projects with images, case-study content, and live demo links."
+      />
 
-      <form onSubmit={handleSubmit} className="mb-8 space-y-3 rounded-xl border border-stone-200 bg-white p-6">
-        <input placeholder="Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required className="w-full rounded-lg border border-stone-200 px-3 py-2 text-sm" />
-        <input placeholder="Languages" value={form.languages} onChange={(e) => setForm({ ...form, languages: e.target.value })} className="w-full rounded-lg border border-stone-200 px-3 py-2 text-sm" />
-        <textarea placeholder="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3} className="w-full rounded-lg border border-stone-200 px-3 py-2 text-sm" />
-        <input placeholder="Image URL" value={form.image} onChange={(e) => setForm({ ...form, image: e.target.value })} className="w-full rounded-lg border border-stone-200 px-3 py-2 text-sm" />
-        <input type="file" accept="image/*" onChange={handleUpload} />
-        <input type="number" placeholder="Order" value={form.order} onChange={(e) => setForm({ ...form, order: Number(e.target.value) })} className="w-full rounded-lg border border-stone-200 px-3 py-2 text-sm" />
-        <button type="submit" className="rounded-lg bg-stone-800 px-4 py-2 text-sm text-white">
-          {editingId ? 'Update' : 'Add'} Project
-        </button>
-      </form>
+      {error && (
+        <div className="mb-4">
+          <AdminAlert type="error">{error}</AdminAlert>
+        </div>
+      )}
+
+      <AdminCard title={editingId ? 'Update Project' : 'Add Project'} className="mb-6">
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <AdminField label="Title">
+              <AdminInput
+                placeholder="Project title"
+                value={form.title}
+                onChange={(e) => setForm({ ...form, title: e.target.value })}
+                required
+              />
+            </AdminField>
+            <AdminField label="Languages">
+              <AdminInput
+                placeholder="React, Node.js, Express"
+                value={form.languages}
+                onChange={(e) => setForm({ ...form, languages: e.target.value })}
+              />
+            </AdminField>
+            <AdminField label="Card Image URL">
+              <AdminInput
+                placeholder="/uploads/project.png"
+                value={form.image}
+                onChange={(e) => setForm({ ...form, image: e.target.value })}
+              />
+            </AdminField>
+            <AdminField label="Live URL">
+              <AdminInput
+                placeholder="https://example.com"
+                value={form.liveUrl}
+                onChange={(e) => setForm({ ...form, liveUrl: e.target.value })}
+              />
+            </AdminField>
+            <AdminField label="Order">
+              <AdminInput
+                type="number"
+                value={form.order}
+                onChange={(e) => setForm({ ...form, order: Number(e.target.value) })}
+              />
+            </AdminField>
+            <AdminField label="Upload Card Image">
+              <AdminInput type="file" accept="image/*" onChange={handleUpload} />
+            </AdminField>
+          </div>
+
+          <AdminField label="Card Description">
+            <AdminTextarea
+              placeholder="Short description shown on the project card"
+              value={form.description}
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
+              rows={3}
+            />
+          </AdminField>
+
+          <AdminField label="Case Study Blog">
+            <ProjectContentEditor
+              blocks={form.contentBlocks}
+              onChange={(contentBlocks) => setForm({ ...form, contentBlocks })}
+            />
+          </AdminField>
+
+          <AdminField label="Highlights">
+            <AdminTextarea
+              placeholder="One highlight per line"
+              value={form.highlights}
+              onChange={(e) => setForm({ ...form, highlights: e.target.value })}
+              rows={4}
+            />
+          </AdminField>
+
+          <div className="flex gap-2">
+            <AdminButton type="submit">{editingId ? 'Update Project' : 'Add Project'}</AdminButton>
+            {editingId && (
+              <AdminButton type="button" variant="ghost" onClick={resetForm}>
+                Cancel
+              </AdminButton>
+            )}
+          </div>
+        </form>
+      </AdminCard>
 
       <div className="space-y-3">
-        {projects.map((project) => (
-          <div key={project._id} className="flex items-start justify-between rounded-lg border border-stone-200 bg-white p-4">
-            <div className="flex gap-4">
-              {project.image && <img src={resolveAsset(project.image)} alt="" className="h-16 w-24 rounded object-cover" />}
-              <div>
-                <p className="font-medium text-stone-800">{project.title}</p>
-                <p className="text-xs text-stone-400">{project.languages}</p>
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <button type="button" onClick={() => handleEdit(project)} className="text-xs text-stone-500">Edit</button>
-              <button type="button" onClick={() => handleDelete(project._id)} className="text-xs text-red-500">Delete</button>
-            </div>
-          </div>
-        ))}
+        {projects.length === 0 ? (
+          <AdminEmpty message="No projects added yet." />
+        ) : (
+          projects.map((project) => (
+            <AdminListItem
+              key={project._id}
+              leading={
+                project.image ? (
+                  <img
+                    src={resolveAsset(project.image)}
+                    alt=""
+                    className="h-14 w-20 rounded border border-line bg-void object-contain p-1"
+                  />
+                ) : null
+              }
+              title={project.title}
+              subtitle={project.languages}
+              actions={
+                <>
+                  <AdminButton variant="ghost" onClick={() => handleEdit(project)}>
+                    Edit
+                  </AdminButton>
+                  <AdminButton variant="danger" onClick={() => handleDelete(project._id)}>
+                    Delete
+                  </AdminButton>
+                </>
+              }
+            />
+          ))
+        )}
       </div>
     </div>
   );

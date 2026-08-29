@@ -1,6 +1,9 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { Lock, Shield } from 'lucide-react';
+import { ADMIN_BASE } from '../lib/site.js';
 import { api } from '../services/api.js';
+import { AdminAlert, AdminButton, AdminCard, AdminField, AdminInput } from './components/AdminUi.jsx';
 
 export default function AdminLogin() {
   const navigate = useNavigate();
@@ -15,7 +18,7 @@ export default function AdminLogin() {
     try {
       const { token } = await api.login(form);
       localStorage.setItem('adminToken', token);
-      navigate('/admin');
+      navigate(ADMIN_BASE);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -24,42 +27,59 @@ export default function AdminLogin() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-stone-100 px-4">
-      <form
-        onSubmit={handleSubmit}
-        className="w-full max-w-sm rounded-xl border border-stone-200 bg-white p-8 shadow-sm"
-      >
-        <h1 className="mb-6 text-center text-lg font-medium text-stone-800">Admin Login</h1>
-        <div className="space-y-4">
-          <input
-            type="email"
-            placeholder="Email"
-            value={form.email}
-            onChange={(e) => setForm({ ...form, email: e.target.value })}
-            required
-            className="w-full rounded-lg border border-stone-200 px-4 py-2 text-sm outline-none focus:border-stone-400"
-          />
-          <input
-            type="password"
-            placeholder="Password"
-            value={form.password}
-            onChange={(e) => setForm({ ...form, password: e.target.value })}
-            required
-            className="w-full rounded-lg border border-stone-200 px-4 py-2 text-sm outline-none focus:border-stone-400"
-          />
+    <div className="noise relative flex min-h-screen items-center justify-center bg-void px-4">
+      <div className="void-grid pointer-events-none fixed inset-0 opacity-20" aria-hidden="true" />
+      <div className="relative z-10 w-full max-w-md">
+        <div className="mb-8 text-center">
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl border border-mint/30 bg-mint/10 text-mint">
+            <Shield className="h-5 w-5" />
+          </div>
+          <p className="font-orbit text-[10px] tracking-[0.45em] text-fg-3">SECURE ACCESS</p>
+          <h1 className="mt-2 font-display text-3xl text-fg">Portfolio Admin</h1>
+          <p className="mt-2 text-sm text-fg-2">Sign in to manage your portfolio content.</p>
         </div>
-        {error && <p className="mt-3 text-sm text-red-500">{error}</p>}
-        <button
-          type="submit"
-          disabled={loading}
-          className="mt-6 w-full rounded-lg bg-stone-800 py-2 text-sm text-white transition hover:bg-stone-700 disabled:opacity-50"
-        >
-          {loading ? 'Signing in...' : 'Sign In'}
-        </button>
-        <p className="mt-4 text-center text-xs text-stone-400">
+
+        <AdminCard>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <AdminField label="Email">
+              <AdminInput
+                type="email"
+                placeholder="admin@portfolio.com"
+                value={form.email}
+                onChange={(e) => setForm({ ...form, email: e.target.value })}
+                required
+              />
+            </AdminField>
+            <AdminField label="Password">
+              <AdminInput
+                type="password"
+                placeholder="Enter password"
+                value={form.password}
+                onChange={(e) => setForm({ ...form, password: e.target.value })}
+                required
+              />
+            </AdminField>
+            {error && <AdminAlert type="error">{error}</AdminAlert>}
+            <AdminButton
+              type="submit"
+              disabled={loading}
+              className="w-full"
+            >
+              <Lock className="h-3.5 w-3.5" />
+              {loading ? 'Signing in...' : 'Sign In'}
+            </AdminButton>
+          </form>
+        </AdminCard>
+
+        <p className="mt-6 text-center text-xs text-fg-3">
           Default: admin@portfolio.com / admin123
         </p>
-      </form>
+        <p className="mt-4 text-center">
+          <Link to="/" className="text-xs tracking-[0.15em] text-fg-3 transition hover:text-mint">
+            ← BACK TO SITE
+          </Link>
+        </p>
+      </div>
     </div>
   );
 }

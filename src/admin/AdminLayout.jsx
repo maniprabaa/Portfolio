@@ -1,42 +1,45 @@
-import { Navigate, Outlet } from 'react-router-dom';
-import { CYBERINTEL_URL } from '../lib/site.js';
+import { useEffect, useState } from 'react';
+import { Navigate, Outlet, useNavigate } from 'react-router-dom';
+import { ADMIN_LOGIN } from '../lib/site.js';
+import { api } from '../services/api.js';
+import { AdminSidebar, AdminTopBar } from './components/AdminUi.jsx';
 
 export default function AdminLayout() {
   const token = localStorage.getItem('adminToken');
-  if (!token) return <Navigate to="/admin/login" replace />;
+  const navigate = useNavigate();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    if (!token) return;
+    api
+      .getMessages()
+      .then((messages) => setUnreadCount(messages.filter((msg) => !msg.read).length))
+      .catch(() => {});
+  }, [token]);
+
+  if (!token) return <Navigate to={ADMIN_LOGIN} replace />;
+
+  const handleLogout = () => {
+    localStorage.removeItem('adminToken');
+    navigate(ADMIN_LOGIN);
+  };
 
   return (
-    <div className="min-h-screen bg-stone-100">
-      <nav className="border-b border-stone-200 bg-white px-6 py-4">
-        <div className="mx-auto flex max-w-6xl items-center justify-between">
-          <h1 className="text-sm font-medium tracking-widest text-stone-700">PORTFOLIO ADMIN</h1>
-          <div className="flex items-center gap-4">
-            <a
-              href={CYBERINTEL_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs font-medium text-stone-600 hover:text-stone-900"
-            >
-              CyberIntel →
-            </a>
-            <a href="/" className="text-xs text-stone-500 hover:text-stone-800">
-              View Site
-            </a>
-            <button
-              type="button"
-              onClick={() => {
-                localStorage.removeItem('adminToken');
-                window.location.href = '/admin/login';
-              }}
-              className="text-xs text-red-500 hover:text-red-700"
-            >
-              Logout
-            </button>
-          </div>
+    <div className="noise min-h-screen bg-void text-fg">
+      <div className="void-grid pointer-events-none fixed inset-0 opacity-20" aria-hidden="true" />
+      <div className="relative z-10 flex min-h-screen">
+        <AdminSidebar unreadCount={unreadCount} />
+        <div className="flex min-w-0 flex-1 flex-col">
+          <AdminTopBar onLogout={handleLogout} unreadCount={unreadCount} />
+          <main className="flex-1 px-4 py-6 md:px-8 md:py-8">
+            <div className="mx-auto max-w-6xl">
+              <Outlet context={{ refreshUnread: async () => {
+                const messages = await api.getMessages();
+                setUnreadCount(messages.filter((msg) => !msg.read).length);
+              } }} />
+            </div>
+          </main>
         </div>
-      </nav>
-      <div className="mx-auto max-w-6xl px-6 py-8">
-        <Outlet />
       </div>
     </div>
   );

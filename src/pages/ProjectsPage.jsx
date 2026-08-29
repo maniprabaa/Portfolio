@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import PageShell from '../components/layout/PageShell.jsx';
 import PageHeader, { StandalonePageLinks } from '../components/layout/PageHeader.jsx';
 import Reveal from '../components/ui/Reveal.jsx';
@@ -82,38 +83,43 @@ export default function ProjectsPage() {
             const accent = accents[i % accents.length];
             return (
               <Reveal key={project._id} delay={(i % 3) * 0.1}>
-                <article className="group flex h-full flex-col border border-line transition-all hover:border-mint/30 hover:bg-void-2/40">
-                  <div className="relative aspect-[4/3] overflow-hidden border-b border-line bg-void-2">
+                <Link
+                  to={`/projects/${project._id}`}
+                  className="group flex h-full flex-col border border-line transition-all hover:border-mint/30 hover:bg-void-2/40"
+                >
+                  <div className="relative h-36 overflow-hidden border-b border-line bg-void-2 md:h-40">
                     {project.image ? (
                       <img
                         src={resolveAsset(project.image)}
                         alt={project.title}
-                        className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
+                        className="h-full w-full object-contain p-1.5 transition duration-700 group-hover:scale-105"
                       />
                     ) : (
                       <ProjectVisual accent={accent} index={i} />
                     )}
                   </div>
-                  <div className="flex flex-1 flex-col p-6">
-                    <h3 className="font-display text-lg font-medium text-fg transition-colors group-hover:text-mint">
+                  <div className="flex flex-col p-4">
+                    <h3 className="font-display text-base font-medium text-fg transition-colors group-hover:text-mint">
                       {project.title.toUpperCase()}
                     </h3>
-                    <p className="mt-2 text-[11px] tracking-wide text-fg-3">{project.languages}</p>
-                    <p className="mt-3 flex-1 text-sm leading-relaxed text-fg-2">
+                    <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-fg-2">
                       {project.description}
                     </p>
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      {project.languages?.split(',').map((tag) => (
+                    <div className="mt-3 flex flex-wrap gap-1.5">
+                      {project.languages?.split(',').slice(0, 4).map((tag) => (
                         <span
                           key={tag}
-                          className="border border-line px-2 py-1 text-[10px] tracking-wider text-fg-3"
+                          className="border border-line px-2 py-0.5 text-[9px] tracking-wider text-fg-3"
                         >
                           {tag.trim().toUpperCase()}
                         </span>
                       ))}
                     </div>
+                    <span className="mt-3 text-[10px] tracking-[0.2em] text-mint opacity-80 transition group-hover:opacity-100">
+                      READ CASE STUDY →
+                    </span>
                   </div>
-                </article>
+                </Link>
               </Reveal>
             );
           })}

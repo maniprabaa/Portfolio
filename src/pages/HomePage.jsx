@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import PageShell from '../components/layout/PageShell.jsx';
 import Reveal from '../components/ui/Reveal.jsx';
+import SocialLinks from '../components/ui/SocialLinks.jsx';
 import { resolveAsset } from '../config/baseUrl.js';
 import { usePortfolio, PageLoader, PageError } from '../hooks/usePortfolio.jsx';
 
@@ -56,7 +57,7 @@ export default function HomePage() {
           <div className="css-void-core h-64 w-64 xl:h-80 xl:w-80" />
         </div>
 
-        <div className="relative z-10 mx-auto max-w-page px-6 md:px-10">
+        <div className="relative z-10 mx-auto max-w-page px-6 pt-10 md:px-10">
           <div className="grid w-full grid-cols-1 items-start gap-8 lg:grid-cols-2 lg:gap-10 xl:gap-14">
             {/* Left — headline & CTAs */}
             <div className="order-2 lg:order-1">
@@ -117,12 +118,13 @@ export default function HomePage() {
                     DOWNLOAD CV
                   </a>
                 )}
+                <SocialLinks />
               </motion.div>
             </div>
 
             {/* Right — photo + profile */}
             <motion.div
-              className="order-1 lg:order-2 lg:flex lg:min-h-[calc(100svh-6rem)] lg:items-center lg:justify-end"
+              className="order-1 lg:order-2"
               initial={{ opacity: 0, x: 24 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.9, delay: 0.5, ease }}
